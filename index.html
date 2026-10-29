@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f5f6b">
+<title>Mini Sudoku 4×4</title>
+<style>
+:root{
+  --bg:#e8eef0; --panel:#ffffff; --ink:#18323a; --given:#18323a; --mine:#1f7a8c;
+  --line:#9db4ba; --block:#18323a; --sel:#ffe08a; --bad:#e5484d; --badbg:#fde4e4; --accent:#1f5f6b; --accent-ink:#fff; --peer:#f0f5f6;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1c20; --panel:#172a30; --ink:#e3eef0; --given:#e3eef0; --mine:#6fd0e2; --line:#3b565e;
+    --block:#9fc3cb; --sel:#6b5a1c; --bad:#ff7b80; --badbg:#4a2326; --accent:#6fd0e2; --accent-ink:#0f1c20; --peer:#1d3238;
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;
+  display:flex;justify-content:center;padding:env(safe-area-inset-top,0px) 16px env(safe-area-inset-bottom,0px)}
+main{width:100%;max-width:420px;display:flex;flex-direction:column;gap:18px;padding:20px 0;justify-content:center}
+h1{margin:0;font-size:1.5rem;letter-spacing:.01em}
+.msg{min-height:1.4em;margin:0;font-size:1rem}
+.msg.ok{color:var(--mine);font-weight:700}
+#board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));background:var(--panel);border:3px solid var(--block);
+  border-radius:10px;overflow:hidden;aspect-ratio:1}
+.cell{border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
+  font-size:clamp(1.8rem,10vw,2.6rem);font-weight:700;cursor:pointer;background:transparent;color:var(--mine);
+  padding:0;font-family:inherit;border-radius:0;min-width:0;min-height:0;overflow:hidden}
+.cell.given{color:var(--given);cursor:default}
+.cell.r1{border-bottom:3px solid var(--block)}
+.cell.c1{border-right:3px solid var(--block)}
+.cell.peer{background:var(--peer)}
+.cell.sel{background:var(--sel)}
+.cell.bad{background:var(--badbg);color:var(--bad)}
+.cell:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+#pad{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+#pad button,.row button{font:inherit;font-size:1.3rem;font-weight:700;padding:14px 0;border-radius:10px;border:2px solid var(--accent);
+  background:var(--panel);color:var(--ink);cursor:pointer}
+#pad button:active{background:var(--accent);color:var(--accent-ink)}
+.row{display:flex;gap:8px}
+.row button{flex:1;font-size:1rem;padding:12px 0}
+.row .primary{background:var(--accent);color:var(--accent-ink)}
+#pad button:focus-visible,.row button:focus-visible{outline:3px solid var(--sel);outline-offset:2px}
+.setrow{display:flex;align-items:center;gap:10px;font-size:1rem}
+.setrow select{flex:1;font:inherit;font-size:1.05rem;padding:10px 12px;border-radius:10px;border:2px solid var(--accent);background:var(--panel);color:var(--ink)}
+.setrow select:focus-visible{outline:3px solid var(--sel);outline-offset:2px}
+.cell.emoji,#pad button.emoji{font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;font-weight:400}
+.notes{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;width:100%;height:100%;
+  place-items:center;font-size:clamp(.85rem,4.4vw,1.15rem);font-weight:400;opacity:.5;line-height:1}
+.notes span{display:block}
+#pad.notemode button{border-style:dashed;opacity:.8}
+#notebtn{width:100%;font:inherit;font-size:1rem;font-weight:700;padding:12px 0;border-radius:10px;
+  border:2px solid var(--accent);background:var(--panel);color:var(--ink);cursor:pointer}
+#notebtn[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+#notebtn:focus-visible{outline:3px solid var(--sel);outline-offset:2px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+#collbtn,#collclose{font:inherit;font-size:.95rem;font-weight:700;padding:8px 12px;border-radius:10px;border:2px solid var(--accent);background:var(--panel);color:var(--ink);cursor:pointer}
+#collbtn:focus-visible,#collclose:focus-visible{outline:3px solid var(--sel);outline-offset:2px}
+.reward{font-size:2rem;vertical-align:middle;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+#coll{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+#coll[hidden]{display:none}
+.collbox{background:var(--panel);color:var(--ink);border-radius:12px;padding:14px;width:100%;max-width:440px;max-height:100%;overflow:auto}
+.collhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+#collgrid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:2px}
+.ci{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:clamp(.9rem,4.6vw,1.5rem);border-radius:6px;background:var(--bg);
+  font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.ci.q{color:var(--line);font-weight:700;font-family:inherit}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <h1>Mini Sudoku 4×4</h1>
+    <button id="collbtn" aria-label="Állatgyűjtemény megnyitása">🏆 0/100</button>
+  </div>
+  <label class="setrow">Jelek: <select id="set" aria-label="Jelkészlet"></select></label>
+  <p class="msg" id="msg" aria-live="polite">Koppints egy üres mezőre, majd egy számra.</p>
+  <div id="board" role="grid" aria-label="Sudoku tábla"></div>
+  <div id="pad"></div>
+  <button id="notebtn" aria-pressed="false">✏️ Jegyzet mód: ki</button>
+  <div class="row">
+    <button id="check">Ellenőrzés</button>
+    <button id="reset">Újrakezdés</button>
+    <button id="new" class="primary">Új feladvány</button>
+  </div>
+</main>
+<div id="coll" hidden role="dialog" aria-modal="true" aria-label="Állatgyűjtemény">
+  <div class="collbox">
+    <div class="collhead"><strong id="collcount"></strong><button id="collclose">Bezár</button></div>
+    <div id="collgrid"></div>
+  </div>
+</div>
+<script>
+(function(){
+  var N=4, B=2;
+  var SETS=[
+    {name:'Számok',sym:['1','2','3','4']},
+    {name:'Állatok',sym:['🐶','🐱','🐰','🐸']},
+    {name:'Vadállatok',sym:['🦁','🐘','🦒','🐵']},
+    {name:'Gyümölcsök',sym:['🍎','🍌','🍇','🍓']},
+    {name:'Járművek',sym:['🚗','🚲','✈️','🚀']},
+    {name:'Formák',sym:['🔴','🟦','🟢','⭐']}
+  ];
+  var ANIMALS=['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯',
+    '🦁','🐮','🐷','🐸','🐵','🐔','🐧','🐦','🐤','🦆',
+    '🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋',
+    '🐌','🐞','🐜','🦗','🐢','🐍','🦎','🦖','🦕','🐙',
+    '🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋',
+    '🦈','🐊','🐅','🐆','🦓','🦍','🐘','🦛','🦏','🐪',
+    '🐫','🦒','🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑',
+    '🦙','🐐','🦌','🐕','🐩','🐈','🐓','🦃','🦚','🦜',
+    '🦢','🦩','🕊️','🐇','🦝','🦨','🦡','🦦','🦥','🐁',
+    '🐀','🐿️','🦔','🦫','🦂','🐉','🦧','🐲','🦟','🦭'];
+  var collected=ANIMALS.map(function(){return 0;}), rewarded=false;
+  var setIdx=0;
+  try{var saved=parseInt(localStorage.getItem('sudokuSet'),10);if(saved>=0&&saved<SETS.length)setIdx=saved;}catch(e){}
+  function sym(v){return SETS[setIdx].sym[v-1];}
+  function isEmoji(){return setIdx!==0;}
+  var puzzle=[], grid=[], given=[], notes=[], noteMode=false, sel=-1, solved=false;
+  var boardEl=document.getElementById('board'), msgEl=document.getElementById('msg');
+
+  function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+
+  // Teljes, szabályos kitöltés létrehozása: alapminta + véletlen átalakítások
+  function makeSolution(){
+    var base=[[1,2,3,4],[3,4,1,2],[2,1,4,3],[4,3,2,1]];
+    var digits=shuffle([1,2,3,4]);
+    var rows=shuffle([0,1]).map(function(b,i){return b*2+shuffle([0,1])[0];});
+    var r0=shuffle([0,1]), r1=shuffle([0,1]), c0=shuffle([0,1]), c1=shuffle([0,1]);
+    var rowOrder=[r0[0]*2+r1[0], r0[0]*2+(1-r1[0]), r0[1]*2+r1[1], r0[1]*2+(1-r1[1])];
+    var colOrder=[c0[0]*2+c1[0], c0[0]*2+(1-c1[0]), c0[1]*2+c1[1], c0[1]*2+(1-c1[1])];
+    var g=[];
+    for(var r=0;r<N;r++)for(var c=0;c<N;c++)g.push(digits[base[rowOrder[r]][colOrder[c]]-1]);
+    return g;
+  }
+
+  function candidates(g,i){
+    var r=Math.floor(i/N), c=i%N, used={};
+    for(var k=0;k<N;k++){used[g[r*N+k]]=1;used[g[k*N+c]]=1;}
+    var br=r-r%B, bc=c-c%B;
+    for(var y=0;y<B;y++)for(var x=0;x<B;x++)used[g[(br+y)*N+bc+x]]=1;
+    var res=[];for(var d=1;d<=N;d++)if(!used[d])res.push(d);return res;
+  }
+  function countSolutions(g,limit){
+    var idx=-1;
+    for(var i=0;i<g.length;i++)if(!g[i]){idx=i;break;}
+    if(idx<0)return 1;
+    var n=0, cs=candidates(g,idx);
+    for(var k=0;k<cs.length&&n<limit;k++){g[idx]=cs[k];n+=countSolutions(g,limit-n);g[idx]=0;}
+    return n;
+  }
+  // Mezők eltávolítása úgy, hogy a megoldás egyértelmű maradjon
+  function makePuzzle(){
+    var sol=makeSolution(), p=sol.slice(), order=shuffle(p.map(function(_,i){return i;}));
+    var removed=0, target=9+Math.floor(Math.random()*2);
+    for(var k=0;k<order.length&&removed<target;k++){
+      var i=order[k], v=p[i]; p[i]=0;
+      if(countSolutions(p.slice(),2)===1)removed++; else p[i]=v;
+    }
+    return p;
+  }
+
+  function conflicts(){
+    var bad={};
+    function scan(cells){
+      var seen={};
+      cells.forEach(function(i){var v=grid[i];if(!v)return;(seen[v]=seen[v]||[]).push(i);});
+      for(var v in seen)if(seen[v].length>1)seen[v].forEach(function(i){bad[i]=1;});
+    }
+    for(var a=0;a<N;a++){
+      var row=[],col=[];
+      for(var b=0;b<N;b++){row.push(a*N+b);col.push(b*N+a);}
+      scan(row);scan(col);
+    }
+    for(var br=0;br<N;br+=B)for(var bc=0;bc<N;bc+=B){
+      var blk=[];for(var y=0;y<B;y++)for(var x=0;x<B;x++)blk.push((br+y)*N+bc+x);
+      scan(blk);
+    }
+    return bad;
+  }
+
+  function render(){
+    var bad=conflicts(), pr=-1, pc=-1;
+    if(sel>=0){pr=Math.floor(sel/N);pc=sel%N;}
+    boardEl.innerHTML='';
+    for(var i=0;i<N*N;i++){
+      (function(i){
+        var r=Math.floor(i/N), c=i%N;
+        var b=document.createElement('button');
+        b.className='cell'+(isEmoji()?' emoji':'')+(given[i]?' given':'')+(sel>=0&&i!==sel&&(r===pr||c===pc||(r-r%B===pr-pr%B&&c-c%B===pc-pc%B))?' peer':'')+(i===sel?' sel':'')+(bad[i]?' bad':'')+(r===1?' r1':'')+(c===1?' c1':'');
+        if(grid[i]){b.textContent=sym(grid[i]);}
+        else if(notes[i]&&notes[i].some(function(x){return x;})){
+          var nb=document.createElement('div');nb.className='notes';
+          for(var k=0;k<N;k++){var sp=document.createElement('span');sp.textContent=notes[i][k]?sym(k+1):'';nb.appendChild(sp);}
+          b.appendChild(nb);
+          b.setAttribute('aria-label','Sor '+(r+1)+', oszlop '+(c+1)+', jegyzetek: '+notes[i].map(function(x,k){return x?SETS[setIdx].sym[k]:'';}).join(' '));
+        }
+        b.setAttribute('role','gridcell');
+        b.setAttribute('aria-label','Sor '+(r+1)+', oszlop '+(c+1)+(grid[i]?', érték '+SETS[setIdx].sym[grid[i]-1]:', üres'));
+        b.addEventListener('click',function(){if(solved)return;sel=i;render();});
+        boardEl.appendChild(b);
+      })(i);
+    }
+  }
+  function say(t,ok){msgEl.textContent=t;msgEl.className='msg'+(ok?' ok':'');}
+
+  function isWon(){
+    for(var i=0;i<grid.length;i++)if(!grid[i])return false;
+    return Object.keys(conflicts()).length===0;
+  }
+  function place(v){
+    if(solved||sel<0||given[sel]){say('Előbb válassz egy üres mezőt.');return;}
+    if(noteMode){
+      if(grid[sel]){say('Ez a mező már ki van töltve. Előbb töröld a jelet, ha jegyzetelni szeretnél.');return;}
+      if(v===0)notes[sel]=[0,0,0,0];else notes[sel][v-1]=notes[sel][v-1]?0:1;
+      render();say('');return;
+    }
+    grid[sel]=v;notes[sel]=[0,0,0,0];render();
+    if(isWon()){win();}
+    else say('');
+  }
+
+  function win(){
+    solved=true;sel=-1;render();
+    var txt='Gratulálok, nyertél!';
+    if(rewarded){say(txt+' Ezért a feladványért már kaptál állatot. Indíts új feladványt!',true);return;}
+    rewarded=true;
+    var free=[];for(var i=0;i<collected.length;i++)if(!collected[i])free.push(i);
+    if(!free.length){say(txt+' Mind a 100 állat megvan a gyűjteményedben!',true);return;}
+    var pick=free[Math.floor(Math.random()*free.length)];
+    collected[pick]=1;saveCol();updateCollBtn();
+    say(txt+' Új állat a gyűjteményedben: ',true);
+    var big=document.createElement('span');big.className='reward';big.textContent=ANIMALS[pick];msgEl.appendChild(big);
+  }
+  function start(p,isNew){
+    if(isNew)rewarded=false;
+    puzzle=p;grid=p.slice();notes=p.map(function(){return [0,0,0,0];});given=p.map(function(v){return v>0;});sel=-1;solved=false;
+    render();say('Koppints egy üres mezőre, majd egy számra.');
+  }
+
+  var pad=document.getElementById('pad');
+  function buildPad(){
+    pad.innerHTML='';
+    for(var d=1;d<=N;d++){
+      (function(d){
+        var b=document.createElement('button');b.textContent=sym(d);b.setAttribute('aria-label','Jel: '+sym(d));
+        if(isEmoji())b.className='emoji';
+        b.addEventListener('click',function(){place(d);});pad.appendChild(b);
+      })(d);
+    }
+    var er=document.createElement('button');er.textContent='⌫';er.setAttribute('aria-label','Törlés');
+    er.addEventListener('click',function(){place(0);});pad.appendChild(er);
+  }
+  var setEl=document.getElementById('set');
+  SETS.forEach(function(st,i){
+    var o=document.createElement('option');o.value=i;
+    o.textContent=st.name+(i?'  '+st.sym.join(' '):'');setEl.appendChild(o);
+  });
+  setEl.value=setIdx;
+  setEl.addEventListener('change',function(){
+    setIdx=+setEl.value;
+    try{localStorage.setItem('sudokuSet',setIdx);}catch(e){}
+    buildPad();render();
+  });
+  buildPad();
+
+  var noteBtn=document.getElementById('notebtn');
+  noteBtn.addEventListener('click',function(){
+    noteMode=!noteMode;
+    noteBtn.setAttribute('aria-pressed',noteMode);
+    noteBtn.textContent='✏️ Jegyzet mód: '+(noteMode?'be':'ki');
+    pad.classList.toggle('notemode',noteMode);
+    say(noteMode?'Jegyzet mód: a koppintott jelek halványan a mezőben maradnak. Újabb koppintás törli őket.':'');
+  });
+
+  document.getElementById('check').addEventListener('click',function(){
+    if(solved)return;
+    var n=Object.keys(conflicts()).length, empty=grid.filter(function(v){return !v;}).length;
+    if(n)say('Van ütköző szám (pirossal jelölve). Sor, oszlop vagy 2×2 blokk ismétel.');
+    else if(empty)say('Eddig jó! Még '+empty+' üres mező van.',true);
+  });
+  document.getElementById('reset').addEventListener('click',function(){start(puzzle,false);});
+  document.getElementById('new').addEventListener('click',function(){start(makePuzzle(),true);});
+
+  // --- Gyűjtemény ---
+  var collBtn=document.getElementById('collbtn'), collEl=document.getElementById('coll');
+  function countCol(){return collected.reduce(function(a,b){return a+b;},0);}
+  function updateCollBtn(){collBtn.textContent='🏆 '+countCol()+'/'+ANIMALS.length;}
+  function saveCol(){
+    var list=[];collected.forEach(function(v,i){if(v)list.push(i);});
+    try{localStorage.setItem('sudokuCollection',JSON.stringify(list));}catch(e){}
+  }
+  function loadCol(){
+    try{
+      var list=JSON.parse(localStorage.getItem('sudokuCollection')||'[]');
+      if(Array.isArray(list))list.forEach(function(i){if(i>=0&&i<ANIMALS.length)collected[i]=1;});
+    }catch(e){}
+  }
+  function openColl(){
+    var g=document.getElementById('collgrid');g.innerHTML='';
+    ANIMALS.forEach(function(a,i){
+      var d=document.createElement('div');
+      d.className='ci'+(collected[i]?'':' q');d.textContent=collected[i]?a:'?';
+      g.appendChild(d);
+    });
+    document.getElementById('collcount').textContent='Gyűjtemény: '+countCol()+' / '+ANIMALS.length;
+    collEl.hidden=false;document.getElementById('collclose').focus();
+  }
+  function closeColl(){collEl.hidden=true;collBtn.focus();}
+  collBtn.addEventListener('click',openColl);
+  document.getElementById('collclose').addEventListener('click',closeColl);
+  collEl.addEventListener('click',function(e){if(e.target===collEl)closeColl();});
+  loadCol();updateCollBtn();
+
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'&&!collEl.hidden){closeColl();return;}
+    if(e.key>='1'&&e.key<='4')place(+e.key);
+    else if(e.key==='Backspace'||e.key==='Delete'||e.key==='0')place(0);
+  });
+
+  start(makePuzzle(),true);
+})();
+</script>
+</body>
+</html>
