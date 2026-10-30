@@ -17,10 +17,10 @@ window.EMOJI_DATA={
 
   // A jelválasztóban kínált alapkészletek (mindegyikben pontosan 4 jel). A név a lang.js-ből jön ("set_" + azonosító).
   sets:{
-    animals:['🐶','🐱','🐸','🐘'],
-    fruits:['🍎','🍌','🍇','🍓'],
-    vehicles:['🚗','🚲','✈️','🚀'],
-    shapes:['🔴','🟦','🟢','⭐']
+    animals:['🐶','🐱','🐷','🐰'],
+    fruits:['🍎','🍌','🍇','🥝'],
+    vehicles:['🚗','🚲','✈️','🚂'],
+    shapes:['🔴','🟦','❤️','⭐']
   },
 
   // Az "Egyéb (saját)" készlet palettája kategóriánként (a kategória neve a lang.js-ből jön: "cat_" vagy "set_" + azonosító).
