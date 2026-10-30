@@ -19,8 +19,8 @@ window.EMOJI_DATA={
   sets:{
     animals:['🐶','🐱','🐷','🐰'],
     fruits:['🍎','🍌','🍇','🥝'],
-    vehicles:['🚗','🚲','✈️','🚂'],
-    shapes:['🔴','🟦','❤️','⭐']
+    vehicles:['🚗','🚲','✈️','🚜'],
+    shapes:['🟢','🟦','❤️','⭐']
   },
 
   // Az "Egyéb (saját)" készlet palettája kategóriánként (a kategória neve a lang.js-ből jön: "cat_" vagy "set_" + azonosító).
